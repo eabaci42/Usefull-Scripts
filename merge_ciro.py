@@ -4,18 +4,32 @@ import sys
 def merge_ciro(excel1_path, excel2_path, output_path="output.xlsx"):
     # Excel 1: Tüm müşteri ve ciro listesi
     df1 = pd.read_excel(excel1_path)
-    df1.columns = ['Müşteri', 'Ciro']  # Kolon adlarını sabitliyoruz
-
-    # Excel 2: Filtrelenmiş müşteri listesi, boş ciro sütunu
+    # 2025ciro.xlsx için kolon adlarını düzeltme
+    df1.columns = ['Müşteri', 'Ciro']
+    
+    # Excel 2: Filtrelenmiş müşteri listesi
     df2 = pd.read_excel(excel2_path)
-    df2.columns = ['Müşteri', 'Ciro']  # Aynı kolon adlarını burada da kullanıyoruz
-
+    # alpercebi.xlsx için tek kolon olduğundan yeni kolon ekleme
+    df2.columns = ['Müşteri']
+    df2['Ciro'] = 0  # Boş ciro sütunu ekliyoruz
+    
     # Ciroyu eşleştir
-    merged_df = df2.copy()
-    merged_df['Ciro'] = merged_df['Müşteri'].map(df1.set_index('Müşteri')['Ciro'])
-
+    for index, row in df2.iterrows():
+        müşteri = row['Müşteri']
+        # Tam eşleşme kontrolü yapalım
+        match = df1[df1['Müşteri'] == müşteri]
+        
+        if not match.empty:
+            df2.at[index, 'Ciro'] = match.iloc[0]['Ciro']
+        else:
+            # Kısmi eşleşme kontrolü
+            for idx, master_row in df1.iterrows():
+                if müşteri in master_row['Müşteri'] or master_row['Müşteri'] in müşteri:
+                    df2.at[index, 'Ciro'] = master_row['Ciro']
+                    break
+    
     # Sonuçları yaz
-    merged_df.to_excel(output_path, index=False)
+    df2.to_excel(output_path, index=False)
     print(f"[✔] İşlem tamamlandı. Sonuç dosyası: {output_path}")
 
 if __name__ == "__main__":
